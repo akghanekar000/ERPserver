@@ -1,7 +1,7 @@
 {
   "name": "erp-backend",
-  "version": "1.0.0",
-  "description": "Simple ERP backend with Express, MongoDB, JWT authentication",
+  "version": "1.2.0",
+  "description": "ERP backend with Express, MongoDB, JWT auth, role-based access, modular structure",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -13,8 +13,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.6.1"
+    "mongoose": "^7.6.1",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
