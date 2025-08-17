@@ -1,31 +1,38 @@
-// server.js (ESM)
-import 'dotenv/config'; // loads .env in dev if present
-import express from 'express';
-import cors from 'cors';
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import morgan from "morgan";
+import { connectDB } from "./config/db.js";
+import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
+dotenv.config();
 const app = express();
-app.use(cors());
+
+app.use(cors({ origin: "*", credentials: false }));
 app.use(express.json());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-const PORT = process.env.PORT ?? 5000;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@example.com';
-const ADMIN_PASS = process.env.ADMIN_PASS ?? 'admin';
+app.get("/health", (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-// login route uses env values
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body ?? {};
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password required' });
-  }
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/reports", reportRoutes);
 
-  if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-    return res.json({ success: true, message: 'Login successful' });
-  } else {
-    return res.status(401).json({ success: false, message: 'Invalid credentials' });
-  }
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+connectDB().then(() => {
+  app.listen(PORT, () => console.log(`✅ Server on :${PORT}`));
+}).catch((err) => {
+  console.error("❌ DB connect error:", err?.message || err);
+  process.exit(1);
 });
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-app.listen(PORT, () => console.log(`Server (ESM) running on port ${PORT}`));
-
