@@ -24,11 +24,8 @@ app.post('/api/login', (req, res) => {
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
-
-// show a simple message at the root so preview doesn't say "Cannot GET /"
-app.get('/', (req, res) => {
-  res.send('ERP backend is running. Use /api/login (POST) or /health.');
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
 });
-
 app.listen(PORT, () => console.log(`Server (ESM) running on port ${PORT}`));
 
