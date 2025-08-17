@@ -1,34 +1,31 @@
-// server.js
+// server.js (ESM)
+import 'dotenv/config'; // loads .env in dev if present
 import express from 'express';
 import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Temporary in-memory credentials
-const USER = {
-  email: 'admin@example.com',
-  password: 'admin',
-};
+const PORT = process.env.PORT ?? 5000;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@example.com';
+const ADMIN_PASS = process.env.ADMIN_PASS ?? 'admin';
 
-// Login API
+// login route uses env values
 app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body ?? {};
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password required' });
+  }
 
-  if (email === USER.email && password === USER.password) {
+  if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
     return res.json({ success: true, message: 'Login successful' });
   } else {
-    return res
-      .status(401)
-      .json({ success: false, message: 'Invalid credentials' });
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-});
+app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.listen(PORT, () => console.log(`Server (ESM) running on port ${PORT}`));
+
