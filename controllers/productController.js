@@ -17,8 +17,9 @@ export async function getProduct(req, res, next) {
 
 export async function createProduct(req, res, next) {
   try {
-    const p = await Product.create(req.body);
-    res.status(201).json(p);
+    const payload = req.body;
+    const product = await Product.create(payload);
+    res.status(201).json(product);
   } catch (e) { next(e); }
 }
 
