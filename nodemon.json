@@ -1,0 +1,6 @@
+{
+    "watch": ["server.js", "src", "routes", "controllers", "config"],
+    "ext": "js,mjs,json",
+    "ignore": ["node_modules", ".git", ".vscode", ".idea", "public"],
+    "delay": "2000"
+  }
