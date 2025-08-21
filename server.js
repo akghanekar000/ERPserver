@@ -16,52 +16,22 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
-// -------------------
-// App Initialization
-// -------------------
 const app = express();
 
-// -------------------
-// Middleware
-// -------------------
+// Middlewares
+app.use(cors());
+app.use(morgan("dev"));
+app.use(express.json()); // parse application/json
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ CORS setup (allow frontend + production)
-const allowedOrigins = [
-  "http://localhost:5173",   // Vite dev server
-  "http://localhost:3000",   // React dev server
-  process.env.FRONTEND_URL,  // Production frontend (set in .env)
-].filter(Boolean);
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
-// ✅ JSON parser
-app.use(express.json());
-
-// ✅ Logger
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-
-// -------------------
-// Health Check Route
-// -------------------
-app.get("/health", (_req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
-});
-
-// -------------------
-// API Routes
-// -------------------
+// API Routes (namespace under /api)
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/reports", reportRoutes);
 
-// -------------------
-// Error Handlers
-// -------------------
+// Error handlers (404 then general)
 app.use(notFound);
 app.use(errorHandler);
 
@@ -80,3 +50,4 @@ connectDB()
     console.error("❌ DB Connection Failed:", err?.message || err);
     process.exit(1);
   });
+  
