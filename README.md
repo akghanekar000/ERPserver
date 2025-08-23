@@ -1,7 +1,9 @@
-Simple express demo
+import mongoose from "mongoose";
 
-> Express: fast, unopinionated, minimalist web framework for Node.js
-
-This project shows a simple express server serving a single HTML page and using `express.static` to serve static files.
-
-Check out the [express documentation](https://expressjs.com/) for more information.
+export async function connectDB() {
+  const uri = process.env.MONGO_URI;
+  if (!uri) throw new Error("MONGO_URI missing");
+  mongoose.set("strictQuery", true);
+  await mongoose.connect(uri);
+  console.log("✅ Mongo connected");
+}
