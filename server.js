@@ -1,36 +1,54 @@
+// server.js
 import express from "express";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-import morgan from "morgan";
-import { connectDB } from "./config/db.js";
+import helmet from "helmet";
+import compression from "compression";
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
-app.use(express.json());
-app.use(cors());
-app.use(morgan("dev"));
 
-// Connect Database
+// ✅ Middleware
+app.use(express.json());           // Parse JSON requests
+app.use(cors());                   // Enable CORS
+app.use(helmet());                 // Security headers
+app.use(compression());            // Gzip compression
+
+// ✅ MongoDB Connection
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  }
+};
 connectDB();
 
-// Simple route
+// ✅ Example route
 app.get("/", (req, res) => {
-  res.send("API is running and connected to MongoDB");
+  res.json({ message: "Backend server is running securely 🚀" });
 });
 
-// Import routes
-import authRoutes from "./routes/authRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import customerRoutes from "./routes/customerRoutes.js";
-import invoiceRoutes from "./routes/invoiceRoutes.js";
-import reportRoutes from "./routes/reportRoutes.js";
+// ✅ Centralized error handler
+app.use((err, req, res, next) => {
+  console.error("❌ Error:", err.stack);
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong!",
+    error: err.message,
+  });
+});
 
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/customers", customerRoutes);
-app.use("/api/invoices", invoiceRoutes);
-app.use("/api/reports", reportRoutes);
-
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
