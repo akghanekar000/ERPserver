@@ -1,54 +1,44 @@
-// server.js
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
+import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
+import { connectDB } from "./config/db.js";
 
-// Load environment variables
+import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+
 dotenv.config();
-
 const app = express();
 
-// ✅ Middleware
-app.use(express.json());           // Parse JSON requests
-app.use(cors());                   // Enable CORS
-app.use(helmet());                 // Security headers
-app.use(compression());            // Gzip compression
+app.use(helmet());
+app.use(compression());
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: process.env.ALLOW_ORIGIN || "*", credentials: false }));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// ✅ MongoDB Connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ MongoDB connected successfully");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
-  }
-};
-connectDB();
+app.get("/health", (_req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
-// ✅ Example route
-app.get("/", (req, res) => {
-  res.json({ message: "Backend server is running securely 🚀" });
-});
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/reports", reportRoutes);
 
-// ✅ Centralized error handler
-app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.stack);
-  res.status(500).json({
-    success: false,
-    message: "Something went wrong!",
-    error: err.message,
-  });
-});
+app.use(notFound);
+app.use(errorHandler);
 
-// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+
+connectDB()
+  .then(() => app.listen(PORT, () => console.log(`✅ Server on :${PORT}`)))
+  .catch((err) => {
+    console.error("❌ DB connect error:", err?.message || err);
+    process.exit(1);
+  });
