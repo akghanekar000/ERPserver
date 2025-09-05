@@ -19,13 +19,12 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(express.json());      // parse JSON bodies
-app.use(morgan("dev"));      // request logging
-app.use(helmet());           // security headers
-app.use(cors());             // enable CORS
-app.use(compression());      // gzip responses
+app.use(express.json());
+app.use(morgan("dev"));
+app.use(helmet());
+app.use(cors());
+app.use(compression());
 
-// Simple root route
 app.get("/", (req, res) => res.send("API running"));
 
 // Mount routes
@@ -41,12 +40,13 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Connect DB then start server
-connectDB()
-  .then(() => {
+// Try to connect DB, but start server regardless so nodemon won't exit
+(async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("DB connection failed (continuing without DB):", err?.message || err);
+  } finally {
     app.listen(PORT, () => console.log(`✅ Server listening on :${PORT}`));
-  })
-  .catch((err) => {
-    console.error("❌ DB connect error:", err?.message || err);
-    process.exit(1);
-  });
+  }
+})();
