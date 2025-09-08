@@ -32,6 +32,7 @@ export const registerUser = async (req, res) => {
     refreshTokens.push(refreshToken);
 
     res.status(201).json({
+        token: accessToken,
       accessToken,
       refreshToken,
       user: { id: user._id, email: user.email, name: user.name },
@@ -52,6 +53,7 @@ export const loginUser = async (req, res) => {
       refreshTokens.push(refreshToken);
 
       res.json({
+      token: accessToken,
         accessToken,
         refreshToken,
         user: { id: user._id, email: user.email, name: user.name },
