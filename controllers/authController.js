@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+import User from "../models/userModel.js";
 
 // Helpers
 const generateAccessToken = (id) => {
@@ -10,7 +10,7 @@ const generateRefreshToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "30d" });
 };
 
-// Store refresh tokens in memory (replace with DB in production)
+// Store refresh tokens in memory (for demo only; use DB in production)
 let refreshTokens = [];
 
 // Register
@@ -32,7 +32,7 @@ export const registerUser = async (req, res) => {
     refreshTokens.push(refreshToken);
 
     res.status(201).json({
-        token: accessToken,
+      token: accessToken,             // 👈 alias for frontend compatibility
       accessToken,
       refreshToken,
       user: { id: user._id, email: user.email, name: user.name },
@@ -53,7 +53,7 @@ export const loginUser = async (req, res) => {
       refreshTokens.push(refreshToken);
 
       res.json({
-      token: accessToken,
+        token: accessToken,           // 👈 alias for frontend compatibility
         accessToken,
         refreshToken,
         user: { id: user._id, email: user.email, name: user.name },
@@ -87,7 +87,10 @@ export const refreshToken = (req, res) => {
   jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: "Invalid refresh token" });
     const accessToken = generateAccessToken(user.id);
-    res.json({ accessToken });
+    res.json({ 
+      token: accessToken,             // 👈 keep alias in refresh too
+      accessToken 
+    });
   });
 };
 
