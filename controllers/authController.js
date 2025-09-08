@@ -1,117 +1,98 @@
 // controllers/authController.js
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import User from "../models/userModel.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
-const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '30d';
+// Helper to generate tokens
+const generateAccessToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" }); // short-lived
+};
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "30d" }); // long-lived
+};
 
-function generateToken(id) {
-  return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-}
+// In-memory refresh storage (for demo) — you can replace with MongoDB later
+let refreshTokens = [];
 
-// POST /api/auth/register
-// Optional: creates a user (use once via Hoppscotch then disable/remove if desired)
-export async function registerUser(req, res) {
+export const registerUser = async (req, res) => {
+  const { name, email, password } = req.body;
   try {
-    console.log('REGISTER attempt', { headers: req.headers });
-    const { email, password, name } = req.body || {};
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Missing email or password' });
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    const normalizedEmail = String(email).toLowerCase().trim();
-    const existing = await User.findOne({ email: normalizedEmail });
-    if (existing) {
-      return res.status(409).json({ message: 'User already exists' });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await User.create({ name, email, password: hashedPassword });
+    if (user) {
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+      refreshTokens.push(refreshToken);
+
+      res.status(201).json({
+        accessToken,
+        refreshToken,
+        user: { id: user._id, email: user.email, name: user.name },
+      });
+    } else {
+      res.status(400).json({ message: "Invalid user data" });
     }
-
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ email: normalizedEmail, password: hashed, name: name || 'User' });
-
-    return res.status(201).json({
-      id: user._id,
-      email: user.email,
-      name: user.name
-    });
   } catch (err) {
-    console.error('registerUser error', err);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err.message });
   }
-}
+};
 
-// POST /api/auth/login
-export async function loginUser(req, res) {
+export const loginUser = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    console.log('--- LOGIN ATTEMPT ---', new Date().toISOString());
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
+    const user = await User.findOne({ email });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+      refreshTokens.push(refreshToken);
 
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Missing email or password' });
+      res.json({
+        accessToken,
+        refreshToken,
+        user: { id: user._id, email: user.email, name: user.name },
+      });
+    } else {
+      res.status(401).json({ message: "Invalid credentials" });
     }
-
-    const normalizedEmail = String(email).toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
-    console.log('DB user found?:', !!user, 'email:', normalizedEmail);
-
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const match = await bcrypt.compare(password, user.password);
-    console.log('bcrypt.compare result:', match);
-    if (!match) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user._id);
-    return res.json({
-      token,
-      user: { id: user._id, email: user.email, name: user.name }
-    });
   } catch (err) {
-    console.error('loginUser error', err);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err.message });
   }
-}
+};
 
-// GET /api/auth/me
-// If your auth middleware sets req.user, this returns that user. Otherwise verify token here.
-export async function getMe(req, res) {
+// Get logged-in user
+export const getMe = async (req, res) => {
   try {
-    // If a protect middleware has already set req.user (object or id), use it
-    if (req.user) {
-      // if req.user is an ID string, fetch the user; if it's a user object, return it
-      if (typeof req.user === 'string' || req.user._id) {
-        const id = typeof req.user === 'string' ? req.user : req.user._id;
-        const user = await User.findById(id).select('-password');
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        return res.json({ user });
-      }
-      // if req.user already contains full user object
-      return res.json({ user: req.user });
-    }
-
-    // Fallback: verify token from Authorization header
-    const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-    const token = auth.split(' ')[1];
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch (e) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    return res.json({ user });
+    const user = await User.findById(req.user.id).select("-password");
+    res.json(user);
   } catch (err) {
-    console.error('getMe error', err);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err.message });
   }
-}
+};
+
+// Refresh access token
+export const refreshToken = (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(401).json({ message: "No token provided" });
+  if (!refreshTokens.includes(token))
+    return res.status(403).json({ message: "Invalid refresh token" });
+
+  jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Invalid refresh token" });
+    const accessToken = generateAccessToken(user.id);
+    res.json({ accessToken });
+  });
+};
+
+// Logout (invalidate refresh token)
+export const logoutUser = (req, res) => {
+  const { token } = req.body;
+  refreshTokens = refreshTokens.filter((t) => t !== token);
+  res.json({ message: "Logged out successfully" });
+};
