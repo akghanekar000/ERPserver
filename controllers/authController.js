@@ -1,19 +1,19 @@
-// controllers/authController.js
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel.js";
 
-// Helper to generate tokens
+// Helpers
 const generateAccessToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" }); // short-lived
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
 const generateRefreshToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "30d" }); // long-lived
+  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "30d" });
 };
 
-// In-memory refresh storage (for demo) — you can replace with MongoDB later
+// Store refresh tokens in memory (replace with DB in production)
 let refreshTokens = [];
 
+// Register
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -26,24 +26,22 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await User.create({ name, email, password: hashedPassword });
-    if (user) {
-      const accessToken = generateAccessToken(user._id);
-      const refreshToken = generateRefreshToken(user._id);
-      refreshTokens.push(refreshToken);
 
-      res.status(201).json({
-        accessToken,
-        refreshToken,
-        user: { id: user._id, email: user.email, name: user.name },
-      });
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
-    }
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    refreshTokens.push(refreshToken);
+
+    res.status(201).json({
+      accessToken,
+      refreshToken,
+      user: { id: user._id, email: user.email, name: user.name },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+// Login
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -66,7 +64,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// Get logged-in user
+// Get user info
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -76,12 +74,13 @@ export const getMe = async (req, res) => {
   }
 };
 
-// Refresh access token
+// Refresh token
 export const refreshToken = (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(401).json({ message: "No token provided" });
-  if (!refreshTokens.includes(token))
+  if (!refreshTokens.includes(token)) {
     return res.status(403).json({ message: "Invalid refresh token" });
+  }
 
   jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: "Invalid refresh token" });
@@ -90,7 +89,7 @@ export const refreshToken = (req, res) => {
   });
 };
 
-// Logout (invalidate refresh token)
+// Logout
 export const logoutUser = (req, res) => {
   const { token } = req.body;
   refreshTokens = refreshTokens.filter((t) => t !== token);
