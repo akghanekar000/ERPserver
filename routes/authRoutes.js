@@ -1,18 +1,20 @@
 // routes/authRoutes.js
-import express from 'express';
-import { loginUser, registerUser, getMe } from '../controllers/authController.js';
-import { protect } from '../middleware/authMiddleware.js'; // you already have this file
+import express from "express";
+import {
+  registerUser,
+  loginUser,
+  getMe,
+  refreshToken,
+  logoutUser,
+} from "../controllers/authController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public: login
-router.post('/login', loginUser);
-
-// Optional: register (use once to create your test/admin user, then you may remove it)
-// If you prefer not to expose register, skip adding this route and use Atlas manual insert.
-router.post('/register', registerUser);
-
-// Protected: get current user
-router.get('/me', protect, getMe);
+router.post("/register", registerUser);
+router.post("/login", loginUser);
+router.get("/me", protect, getMe);
+router.post("/refresh", refreshToken);
+router.post("/logout", logoutUser);
 
 export default router;
