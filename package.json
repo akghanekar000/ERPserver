@@ -10,6 +10,7 @@
     "create-admin": "node scripts/createAdmin.js"
   },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
