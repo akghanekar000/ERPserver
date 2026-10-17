@@ -36,6 +36,7 @@ app.use("/api/invoices", invoiceRoutes);
 app.use("/api/reports", reportRoutes);
 
 // Error middlewares
+app.use("/api/audit-logs", auditLogRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
