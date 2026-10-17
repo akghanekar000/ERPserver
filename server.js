@@ -13,6 +13,7 @@ import customerRoutes from "./routes/customerRoutes.js";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+import auditLogRoutes from "./routes/auditLogRoutes.js";
 
 dotenv.config();
 
