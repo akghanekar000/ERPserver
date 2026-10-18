@@ -1,18 +1,75 @@
+
 import mongoose from "mongoose";
 
-const itemSchema = new mongoose.Schema({
-  product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-  qty: { type: Number, required: true, min: 1 },
-  price: { type: Number, required: true, min: 0 }
-}, { _id: false });
+const itemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    },
+    qty: { type: Number, required: true, min: 0.001 },
+    // Unit price entered or selected for the product.
+    price: { type: Number, required: true, min: 0 },
+    priceMode: {
+      type: String,
+      enum: ["inclusive", "exclusive"],
+      default: "exclusive"
+    },
+    gstRate: { type: Number, default: 0, min: 0, max: 100 },
+    taxableAmount: { type: Number, default: 0, min: 0 },
+    cgst: { type: Number, default: 0, min: 0 },
+    sgst: { type: Number, default: 0, min: 0 },
+    igst: { type: Number, default: 0, min: 0 },
+    taxAmount: { type: Number, default: 0, min: 0 },
+    lineTotal: { type: Number, default: 0, min: 0 }
+  },
+  { _id: false }
+);
 
-const invoiceSchema = new mongoose.Schema({
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-  items: [itemSchema],
-  subtotal: { type: Number, required: true, min: 0 },
-  tax: { type: Number, default: 0, min: 0 },
-  total: { type: Number, required: true, min: 0 },
-  status: { type: String, enum: ["draft", "sent", "paid", "void"], default: "draft" }
-}, { timestamps: true });
+const invoiceSchema = new mongoose.Schema(
+  {
+    invoiceNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true
+    },
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true
+    },
+    items: {
+      type: [itemSchema],
+      required: true,
+      validate: {
+        validator: (items) => Array.isArray(items) && items.length > 0,
+        message: "An invoice must contain at least one item."
+      }
+    },
+    sellerSnapshot: { type: mongoose.Schema.Types.Mixed, default: {} },
+    customerSnapshot: { type: mongoose.Schema.Types.Mixed, default: {} },
+    supplyType: {
+      type: String,
+      enum: ["intra-state", "inter-state"],
+      default: "intra-state"
+    },
+    subtotal: { type: Number, required: true, min: 0 },
+    taxableAmount: { type: Number, default: 0, min: 0 },
+    cgst: { type: Number, default: 0, min: 0 },
+    sgst: { type: Number, default: 0, min: 0 },
+    igst: { type: Number, default: 0, min: 0 },
+    tax: { type: Number, default: 0, min: 0 },
+    total: { type: Number, required: true, min: 0 },
+    notes: { type: String, default: "" },
+    status: {
+      type: String,
+      enum: ["draft", "sent", "paid", "void"],
+      default: "draft"
+    }
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model("Invoice", invoiceSchema);
