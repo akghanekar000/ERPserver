@@ -35,6 +35,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/companies", companyRoutes);
 
 // Error middlewares
 app.use("/api/audit-logs", auditLogRoutes);
