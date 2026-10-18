@@ -3,6 +3,7 @@ import Invoice from "../models/Invoice.js";
 import Product from "../models/Product.js";
 import Company from "../models/Company.js";
 import InvoiceCounter from "../models/InvoiceCounter.js";
+import Customer from "../models/Customer.js";
 
 const roundMoney = (value) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
@@ -77,9 +78,7 @@ export async function createInvoice(req, res, next) {
       });
     }
 
-    const customer = await import("../models/Customer.js").then(
-      (module) => module.default.findById(customerId)
-    );
+    const customer = await Customer.findById(customerId);
 
     if (!customer) {
       return res.status(400).json({ message: "Customer not found." });
