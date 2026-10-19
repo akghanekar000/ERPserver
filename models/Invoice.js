@@ -34,7 +34,15 @@ const invoiceSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       index: true
-    },
+  },
+    invoiceDate: {
+      type: Date,
+      default: Date.now
+  },
+    roundOff: {
+      type: Number,
+      default: 0
+  },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
