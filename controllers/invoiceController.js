@@ -145,25 +145,6 @@ export async function createInvoice(req, res, next) {
           message: `Invalid quantity, price, or GST settings for ${product.name}.`
         });
       }
-
-      const enteredLineAmount = roundMoney(qty * price);
-      const lineTaxable = roundMoney(
-        priceMode === "inclusive"
-          ? enteredLineAmount / (1 + gstRate / 100)
-          : enteredLineAmount
-      );
-      const lineTax = roundMoney(enteredLineAmount - lineTaxable === 0
-        ? lineTaxable * gstRate / 100
-        : enteredLineAmount - lineTaxable);
-
-      const safeTax = roundMoney(lineTaxable * gstRate / 100);
-      const taxAmount =
-        priceMode === "inclusive" ? lineTax : safeTax;
-
-      const cgst = interstate ? 0 : roundMoney(taxAmount / 2);
-      const sgst = interstate ? 0 : roundMoney(taxAmount - cgst);
-      const igst = interstate ? taxAmount : 0;
-
     
       const enteredLineAmount = roundMoney(qty * price);
       const discountPercent = Number(item.discountPercent ?? 0);
@@ -181,8 +162,6 @@ export async function createInvoice(req, res, next) {
         });
       }
 
-      // An entered discount amount takes priority; otherwise calculate it
-      // from the discount percentage.
       const discountAmount = roundMoney(
         requestedDiscountAmount > 0
           ? requestedDiscountAmount
@@ -222,7 +201,7 @@ export async function createInvoice(req, res, next) {
       );
 
       const savedDiscountPercent = enteredLineAmount > 0
-        ? roundMoney(discountAmount / enteredLineAmount * 100)
+        ? roundMoney((discountAmount / enteredLineAmount) * 100)
         : 0;
 
       subtotal += enteredLineAmount;
@@ -249,8 +228,7 @@ export async function createInvoice(req, res, next) {
         taxAmount,
         lineTotal
       });
-
-    subtotal = roundMoney(subtotal);
+    }
     taxableAmount = roundMoney(taxableAmount);
     totalCgst = roundMoney(totalCgst);
     totalSgst = roundMoney(totalSgst);
@@ -336,4 +314,5 @@ export async function createInvoice(req, res, next) {
     next(error);
   }
 }
+
 
