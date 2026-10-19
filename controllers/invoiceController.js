@@ -197,7 +197,39 @@ export async function createInvoice(req, res, next) {
     const tax = roundMoney(totalCgst + totalSgst + totalIgst);
     const total = roundMoney(taxableAmount + tax);
 
-    const invoiceNumber = await getNextInvoiceNumber();
+    const customInvoiceNumber = String(
+      requestedInvoiceNumber || ""
+    ).trim();
+
+    if (customInvoiceNumber.length > 50) {
+      return res.status(400).json({
+        message: "Invoice number must be 50 characters or fewer."
+     });
+   }
+
+   if (
+     customInvoiceNumber &&
+   await Invoice.exists({ invoiceNumber: customInvoiceNumber })
+   ) {
+    return res.status(409).json({
+      message: "This invoice number already exists. Enter a different number."
+    });
+   }
+
+    let invoiceDate = new Date();
+
+    if (requestedInvoiceDate) {
+      invoiceDate = new Date(`${requestedInvoiceDate}T00:00:00.000Z`);
+
+    if (Number.isNaN(invoiceDate.getTime())) {
+      return res.status(400).json({
+        message: "Enter a valid invoice date."
+      });
+      }
+    }
+ 
+    const invoiceNumber =
+      customInvoiceNumber || await getNextInvoiceNumber();
 
     const invoice = await Invoice.create({
       invoiceNumber,
