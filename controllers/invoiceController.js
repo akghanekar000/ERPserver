@@ -233,6 +233,7 @@ export async function createInvoice(req, res, next) {
 
     const invoice = await Invoice.create({
       invoiceNumber,
+      invoiceDate,
       customer: customer._id,
       items: computedItems,
       sellerSnapshot: {
