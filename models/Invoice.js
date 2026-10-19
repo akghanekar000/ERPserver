@@ -9,6 +9,18 @@ const itemSchema = new mongoose.Schema(
       required: true
     },
     qty: { type: Number, required: true, min: 0.001 },
+    
+    description: { type: String, default: "" },
+    hsnSac: { type: String, default: "", trim: true },
+    unit: { type: String, default: "Nos", trim: true },
+    discountPercent: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    discountAmount: { type: Number, default: 0, min: 0 },
+    
     // Unit price entered or selected for the product.
     price: { type: Number, required: true, min: 0 },
     priceMode: {
@@ -42,6 +54,48 @@ const invoiceSchema = new mongoose.Schema(
     roundOff: {
       type: Number,
       default: 0
+    },
+    buyerOrderNumber: { 
+      type: String, 
+      default: "" 
+    },
+    buyerOrderDate: { 
+      type: Date, 
+      default: null 
+    },
+    vehicleNumber: { 
+      type: String, 
+      default: "" 
+    },
+    deliveryDate: { 
+      type: Date, 
+      default: null 
+    },
+    transportDetails: { 
+      type: String, 
+      default: "" 
+    },
+    deliveryAddress: { 
+      type: String, 
+      default: "" 
+    },
+    placeOfSupply: { 
+      type: String, 
+      default: "" 
+    },
+    reverseCharge: { 
+      type: Boolean, 
+      default: false 
+    },
+    freightCharges: { 
+      type: Number, 
+      default: 0, 
+      min: 0 
+    },
+    packingCharges: { 
+      type: Number, 
+      default: 0, 
+      min: 0 
     },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
