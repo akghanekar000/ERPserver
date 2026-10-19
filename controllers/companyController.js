@@ -37,32 +37,35 @@ export async function saveCompany(req, res, next) {
       });
     }
 
+    const stringField = (field, uppercase = false) => {
+      const value = req.body[field];
+
+      if (typeof value !== "string") {
+        return "";
+      }
+
+      const trimmed = value.trim();
+      return uppercase ? trimmed.toUpperCase() : trimmed;
+    };
+
     const company = await Company.findOneAndUpdate(
       { owner: req.user.id },
       {
         $set: {
           companyName,
           gstin,
-          email:
-            typeof req.body.email === "string"
-              ? req.body.email.trim().toLowerCase()
-              : "",
-          phone:
-            typeof req.body.phone === "string"
-              ? req.body.phone.trim()
-              : "",
-          address:
-            typeof req.body.address === "string"
-              ? req.body.address.trim()
-              : "",
-          state:
-            typeof req.body.state === "string"
-              ? req.body.state.trim()
-              : "",
-          pinCode:
-            typeof req.body.pinCode === "string"
-              ? req.body.pinCode.trim()
-              : ""
+          email: stringField("email").toLowerCase(),
+          phone: stringField("phone"),
+          address: stringField("address"),
+          state: stringField("state"),
+          pinCode: stringField("pinCode"),
+
+          // Bank details
+          bankName: stringField("bankName"),
+          accountHolder: stringField("accountHolder"),
+          accountNumber: stringField("accountNumber"),
+          ifscCode: stringField("ifscCode", true),
+          branch: stringField("branch")
         }
       },
       {
