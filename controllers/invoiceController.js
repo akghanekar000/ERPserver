@@ -62,7 +62,10 @@ export async function getInvoice(req, res, next) {
 
 export async function createInvoice(req, res, next) {
   try {
-    const { customer: customerId, items, notes = "" } = req.body;
+    const { customer: customerId, items, notes = "" 
+           invoiceNumber: requestedInvoiceNumber,
+           invoiceDate: requestedInvoiceDate
+          } = req.body;
 
     if (!customerId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
