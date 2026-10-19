@@ -65,7 +65,7 @@ export async function createInvoice(req, res, next) {
     const { 
       customer: customerId, 
       items, 
-      notes = "" 
+      notes = "",
          invoiceNumber: requestedInvoiceNumber,
          invoiceDate: requestedInvoiceDate
     } = req.body;
