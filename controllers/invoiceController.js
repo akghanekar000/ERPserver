@@ -164,11 +164,66 @@ export async function createInvoice(req, res, next) {
       const sgst = interstate ? 0 : roundMoney(taxAmount - cgst);
       const igst = interstate ? taxAmount : 0;
 
+    
+      const enteredLineAmount = roundMoney(qty * price);
+      const discountPercent = Number(item.discountPercent ?? 0);
+      const requestedDiscountAmount = Number(item.discountAmount ?? 0);
+
+      if (
+        !Number.isFinite(discountPercent) ||
+        discountPercent < 0 ||
+        discountPercent > 100 ||
+        !Number.isFinite(requestedDiscountAmount) ||
+        requestedDiscountAmount < 0
+      ) {
+        return res.status(400).json({
+          message: `Invalid discount settings for ${product.name}.`
+        });
+      }
+
+      // An entered discount amount takes priority; otherwise calculate it
+      // from the discount percentage.
+      const discountAmount = roundMoney(
+        requestedDiscountAmount > 0
+          ? requestedDiscountAmount
+          : enteredLineAmount * discountPercent / 100
+      );
+
+      if (discountAmount > enteredLineAmount) {
+        return res.status(400).json({
+          message: `Discount cannot exceed the item amount for ${product.name}.`
+        });
+      }
+
+      const discountedLineAmount = roundMoney(
+        enteredLineAmount - discountAmount
+      );
+
+      const lineTaxable = roundMoney(
+        priceMode === "inclusive"
+          ? discountedLineAmount / (1 + gstRate / 100)
+          : discountedLineAmount
+      );
+
+      const taxAmount = roundMoney(
+        priceMode === "inclusive"
+          ? discountedLineAmount - lineTaxable
+          : lineTaxable * gstRate / 100
+      );
+
+      const cgst = interstate ? 0 : roundMoney(taxAmount / 2);
+      const sgst = interstate ? 0 : roundMoney(taxAmount - cgst);
+      const igst = interstate ? taxAmount : 0;
+
       const lineTotal = roundMoney(
         priceMode === "inclusive"
-          ? enteredLineAmount
+          ? discountedLineAmount
           : lineTaxable + taxAmount
       );
+
+      const savedDiscountPercent = enteredLineAmount > 0
+        ? roundMoney(discountAmount / enteredLineAmount * 100)
+        : 0;
 
       subtotal += enteredLineAmount;
       taxableAmount += lineTaxable;
@@ -178,9 +233,14 @@ export async function createInvoice(req, res, next) {
 
       computedItems.push({
         product: product._id,
+        description: String(item.description ?? product.description ?? ""),
+        hsnSac: String(item.hsnSac ?? product.hsnSac ?? "").trim(),
+        unit: String(item.unit ?? product.unit ?? "Nos").trim() || "Nos",
         qty,
         price,
         priceMode,
+        discountPercent: savedDiscountPercent,
+        discountAmount,
         gstRate,
         taxableAmount: lineTaxable,
         cgst,
@@ -189,7 +249,6 @@ export async function createInvoice(req, res, next) {
         taxAmount,
         lineTotal
       });
-    }
 
     subtotal = roundMoney(subtotal);
     taxableAmount = roundMoney(taxableAmount);
@@ -277,3 +336,4 @@ export async function createInvoice(req, res, next) {
     next(error);
   }
 }
+
