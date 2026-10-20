@@ -438,6 +438,7 @@ export async function createInvoice(req, res, next) {
       sgst: totalSgst,
       igst: totalIgst,
       tax,
+      roundOff,
       total,
       notes: String(notes || ""),
       status: "draft"
