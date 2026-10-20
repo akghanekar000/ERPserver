@@ -275,6 +275,22 @@ export async function createInvoice(req, res, next) {
       invoiceNumber,
       invoiceDate,
       customer: customer._id,
+      
+      buyerOrderNumber: String(buyerOrderNumber || "").trim(),
+      buyerOrderDate: buyerOrderDate
+        ? new Date(buyerOrderDate)
+        : null,
+      vehicleNumber: String(vehicleNumber || "").trim(),
+      deliveryDate: deliveryDate
+        ? new Date(deliveryDate)
+        : null,
+      transportDetails: String(transportDetails || "").trim(),
+      deliveryAddress: String(deliveryAddress || "").trim(),
+      placeOfSupply: String(placeOfSupply || "").trim(),
+      reverseCharge: reverseCharge === true || reverseCharge === "true",
+      freightCharges: Number(requestedFreightCharges),
+      packingCharges: Number(requestedPackingCharges),
+
       items: computedItems,
       sellerSnapshot: {
         companyName: company.companyName || "",
