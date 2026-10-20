@@ -273,14 +273,95 @@ export async function createInvoice(req, res, next) {
         lineTotal
       });
     }
+    
+
     subtotal = roundMoney(subtotal);
-    taxableAmount = roundMoney(taxableAmount);
+
+    const itemsTaxableAmount = roundMoney(taxableAmount);
+
     totalCgst = roundMoney(totalCgst);
     totalSgst = roundMoney(totalSgst);
     totalIgst = roundMoney(totalIgst);
 
-    const tax = roundMoney(totalCgst + totalSgst + totalIgst);
-    const total = roundMoney(taxableAmount + tax);
+    // Freight and packing are additional amounts before GST.
+    const combinedCharges = roundMoney(
+      freightCharges + packingCharges
+    );
+
+    let chargeCgst = 0;
+    let chargeSgst = 0;
+    let chargeIgst = 0;
+
+    if (combinedCharges > 0) {
+      if (itemsTaxableAmount <= 0) {
+      return res.status(400).json({
+        message:
+          "Freight and packing charges need a positive taxable item amount to determine the applicable GST rates."
+      });
+    }
+
+    let allocatedCharges = 0;
+
+    for (let i = 0; i < computedItems.length; i++) {
+      const invoiceItem = computedItems[i];
+
+     // Allocate charges in proportion to each item's taxable value.
+     // The final item receives any rounding remainder.
+    const chargeShare =
+      i === computedItems.length - 1
+        ? roundMoney(combinedCharges - allocatedCharges)
+        : roundMoney(
+            combinedCharges *
+              invoiceItem.taxableAmount /
+              itemsTaxableAmount
+          );
+
+    allocatedCharges = roundMoney(
+      allocatedCharges + chargeShare
+    );
+
+    // Charges are treated as additional amounts before GST.
+    const chargeTax = roundMoney(
+      chargeShare * invoiceItem.gstRate / 100
+    );
+
+      if (interstate) {
+        chargeIgst = roundMoney(chargeIgst + chargeTax);
+      } else {
+        const itemChargeCgst = roundMoney(chargeTax / 2);
+        const itemChargeSgst = roundMoney(
+          chargeTax - itemChargeCgst
+        );
+
+        chargeCgst = roundMoney(
+          chargeCgst + itemChargeCgst
+        );
+        chargeSgst = roundMoney(
+          chargeSgst + itemChargeSgst
+        );
+      }
+     }
+   }
+
+  // Include freight and packing in the invoice taxable value.
+  taxableAmount = roundMoney(
+    itemsTaxableAmount + combinedCharges
+  );
+
+  // Add GST calculated on freight and packing.
+  totalCgst = roundMoney(totalCgst + chargeCgst);
+  totalSgst = roundMoney(totalSgst + chargeSgst);
+  totalIgst = roundMoney(totalIgst + chargeIgst);
+
+  const tax = roundMoney(
+    totalCgst + totalSgst + totalIgst
+  );
+
+  // Round the final invoice amount to the nearest rupee.
+  const rawTotal = roundMoney(taxableAmount + tax);
+  const roundedTotal = Math.round(rawTotal);
+  const roundOff = roundMoney(roundedTotal - rawTotal);
+  const total = roundedTotal;
 
     const customInvoiceNumber = String(
       requestedInvoiceNumber || ""
