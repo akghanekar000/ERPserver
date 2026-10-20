@@ -62,14 +62,25 @@ export async function getInvoice(req, res, next) {
 
 export async function createInvoice(req, res, next) {
   try {
-    const { 
-      customer: customerId, 
-      items, 
+    
+    const {
+      customer: customerId,
+      items,
       notes = "",
-         invoiceNumber: requestedInvoiceNumber,
-         invoiceDate: requestedInvoiceDate
+      invoiceNumber: requestedInvoiceNumber,
+      invoiceDate: requestedInvoiceDate,
+      buyerOrderNumber = "",
+      buyerOrderDate = null,
+      vehicleNumber = "",
+      deliveryDate = null,
+      transportDetails = "",
+      deliveryAddress = "",
+      placeOfSupply = "",
+      reverseCharge = false,
+      freightCharges: requestedFreightCharges = 0,
+      packingCharges: requestedPackingCharges = 0,
     } = req.body;
-
+    
     if (!customerId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         message: "Select a customer and add at least one invoice item."
