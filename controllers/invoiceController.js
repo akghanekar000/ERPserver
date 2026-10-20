@@ -100,7 +100,40 @@ export async function createInvoice(req, res, next) {
     if (!customer) {
       return res.status(400).json({ message: "Customer not found." });
     }
+    
+    const freightCharges = Number(requestedFreightCharges);
+    const packingCharges = Number(requestedPackingCharges);
 
+    if (
+      !Number.isFinite(freightCharges) ||
+      freightCharges < 0 ||
+      !Number.isFinite(packingCharges) ||
+      packingCharges < 0
+    ) {
+      return res.status(400).json({
+        message: "Freight and packing charges must be valid non-negative amounts."
+      });
+    }
+
+    const parsedBuyerOrderDate = buyerOrderDate
+      ? new Date(buyerOrderDate)
+      : null;
+
+    const parsedDeliveryDate = deliveryDate
+      ? new Date(deliveryDate)
+      : null;
+
+    if (
+      (parsedBuyerOrderDate &&
+        Number.isNaN(parsedBuyerOrderDate.getTime())) ||
+      (parsedDeliveryDate &&
+        Number.isNaN(parsedDeliveryDate.getTime()))
+    ) {
+      return res.status(400).json({
+        message: "Enter a valid buyer order date and delivery date."
+      });
+ 
+    }
     const sellerStateCode = getStateCode(company.gstin);
     const buyerStateCode =
       customer.stateCode || getStateCode(customer.gstin);
@@ -240,6 +273,7 @@ export async function createInvoice(req, res, next) {
         lineTotal
       });
     }
+    subtotal = roundMoney(subtotal);
     taxableAmount = roundMoney(taxableAmount);
     totalCgst = roundMoney(totalCgst);
     totalSgst = roundMoney(totalSgst);
