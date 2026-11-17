@@ -1,10 +1,31 @@
-
 import mongoose from "mongoose";
 
-const invoiceCounterSchema = new mongoose.Schema({
-  _id: { type: String, required: true },
-  sequence: { type: Number, default: 0 }
-});
+const invoiceCounterSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    prefix: {
+      type: String,
+      default: ""
+    },
+    sequence: {
+      type: Number,
+      default: 10000,
+      min: 0
+    }
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model("InvoiceCounter", invoiceCounterSchema);
+invoiceCounterSchema.index(
+  { owner: 1, prefix: 1 },
+  { unique: true }
+);
 
+export default mongoose.model(
+  "InvoiceCounter",
+  invoiceCounterSchema
+);
