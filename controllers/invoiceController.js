@@ -59,10 +59,10 @@ export async function listInvoices(_req, res, next) {
 
 export async function getInvoice(req, res, next) {
   try {
-    const invoice = await Invoice.findOne(
-      _id:req.params.id,
-      owner:req.user.id
-    )
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      owner: req.user.id
+    })
       .populate("customer")
       .populate("items.product");
 
