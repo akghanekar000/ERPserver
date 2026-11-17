@@ -4,6 +4,8 @@ import Product from "../models/Product.js";
 import Company from "../models/Company.js";
 import InvoiceCounter from "../models/InvoiceCounter.js";
 import Customer from "../models/Customer.js";
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
 
 const roundMoney = (value) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
@@ -21,19 +23,30 @@ const normalizeState = (state) =>
     .toLowerCase()
     .replace(/\s+/g, " ");
 
-const getNextInvoiceNumber = async () => {
+const getNextInvoiceNumber = async (ownerId, prefix = "") => {
   const counter = await InvoiceCounter.findOneAndUpdate(
-    { _id: "invoice" },
-    { $inc: { sequence: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    {
+      owner: ownerId,
+      prefix
+    },
+    {
+      $inc: { sequence: 1 }
+    },
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true
+    }
   );
 
-  return `INV-${String(counter.sequence).padStart(5, "0")}`;
+  return `${prefix}${String(counter.sequence).padStart(5, "0")}`;
 };
 
 export async function listInvoices(_req, res, next) {
   try {
-    const invoices = await Invoice.find()
+    const invoices = await Invoice.find({
+      owner:req.user.id
+    })
       .populate("customer")
       .populate("items.product")
       .sort({ createdAt: -1 });
@@ -46,7 +59,10 @@ export async function listInvoices(_req, res, next) {
 
 export async function getInvoice(req, res, next) {
   try {
-    const invoice = await Invoice.findById(req.params.id)
+    const invoice = await Invoice.findOne(
+      _id:req.params.id
+      owner:req.user.id
+    )
       .populate("customer")
       .populate("items.product");
 
