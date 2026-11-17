@@ -393,7 +393,7 @@ export async function createInvoice(req, res, next) {
    if (
      customInvoiceNumber &&
    await Invoice.exists({ 
-     owner:req.user.id
+     owner:req.user.id,
      invoiceNumber: customInvoiceNumber })
    ) {
     return res.status(409).json({
@@ -423,6 +423,7 @@ export async function createInvoice(req, res, next) {
         message: "Prefix must be 15 characters or fewer and contain no spaces."
       });
     }
+    
 
     const invoiceNumber = customInvoiceNumber ||
       await getNextInvoiceNumber(req.user.id, prefix);
