@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const itemSchema = new mongoose.Schema(
@@ -9,7 +8,6 @@ const itemSchema = new mongoose.Schema(
       required: true
     },
     qty: { type: Number, required: true, min: 0.001 },
-    
     description: { type: String, default: "" },
     hsnSac: { type: String, default: "", trim: true },
     unit: { type: String, default: "Nos", trim: true },
@@ -20,8 +18,6 @@ const itemSchema = new mongoose.Schema(
       max: 100
     },
     discountAmount: { type: Number, default: 0, min: 0 },
-    
-    // Unit price entered or selected for the product.
     price: { type: Number, required: true, min: 0 },
     priceMode: {
       type: String,
@@ -41,67 +37,68 @@ const itemSchema = new mongoose.Schema(
 
 const invoiceSchema = new mongoose.Schema(
   {
+    // Company/user who owns this invoice.
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+      immutable: true
+    },
+
     invoiceNumber: {
       type: String,
+      required: true,
+      trim: true,
       unique: true,
-      sparse: true,
       index: true
     },
+
     invoiceDate: {
       type: Date,
       default: Date.now
     },
-    roundOff: {
-      type: Number,
-      default: 0
+
+    // Saved is the permanent invoice-record status.
+    invoiceStatus: {
+      type: String,
+      enum: ["saved"],
+      default: "saved",
+      immutable: true
     },
-    buyerOrderNumber: { 
-      type: String, 
-      default: "" 
+
+    // Payment status can be changed by an authorized user.
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid"],
+      default: "unpaid"
     },
-    buyerOrderDate: { 
-      type: Date, 
-      default: null 
+
+    // Kept for compatibility with existing ERP code.
+    status: {
+      type: String,
+      enum: ["draft", "sent", "paid", "void"],
+      default: "draft"
     },
-    vehicleNumber: { 
-      type: String, 
-      default: "" 
-    },
-    deliveryDate: { 
-      type: Date, 
-      default: null 
-    },
-    transportDetails: { 
-      type: String, 
-      default: "" 
-    },
-    deliveryAddress: { 
-      type: String, 
-      default: "" 
-    },
-    placeOfSupply: { 
-      type: String, 
-      default: "" 
-    },
-    reverseCharge: { 
-      type: Boolean, 
-      default: false 
-    },
-    freightCharges: { 
-      type: Number, 
-      default: 0, 
-      min: 0 
-    },
-    packingCharges: { 
-      type: Number, 
-      default: 0, 
-      min: 0 
-    },
+
+    roundOff: { type: Number, default: 0 },
+    buyerOrderNumber: { type: String, default: "" },
+    buyerOrderDate: { type: Date, default: null },
+    vehicleNumber: { type: String, default: "" },
+    deliveryDate: { type: Date, default: null },
+    transportDetails: { type: String, default: "" },
+    deliveryAddress: { type: String, default: "" },
+    placeOfSupply: { type: String, default: "" },
+    reverseCharge: { type: Boolean, default: false },
+    freightCharges: { type: Number, default: 0, min: 0 },
+    packingCharges: { type: Number, default: 0, min: 0 },
+
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: true
     },
+
     items: {
       type: [itemSchema],
       required: true,
@@ -110,13 +107,22 @@ const invoiceSchema = new mongoose.Schema(
         message: "An invoice must contain at least one item."
       }
     },
-    sellerSnapshot: { type: mongoose.Schema.Types.Mixed, default: {} },
-    customerSnapshot: { type: mongoose.Schema.Types.Mixed, default: {} },
+
+    sellerSnapshot: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+    customerSnapshot: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+
     supplyType: {
       type: String,
       enum: ["intra-state", "inter-state"],
       default: "intra-state"
     },
+
     subtotal: { type: Number, required: true, min: 0 },
     taxableAmount: { type: Number, default: 0, min: 0 },
     cgst: { type: Number, default: 0, min: 0 },
@@ -124,12 +130,7 @@ const invoiceSchema = new mongoose.Schema(
     igst: { type: Number, default: 0, min: 0 },
     tax: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },
-    notes: { type: String, default: "" },
-    status: {
-      type: String,
-      enum: ["draft", "sent", "paid", "void"],
-      default: "draft"
-    }
+    notes: { type: String, default: "" }
   },
   { timestamps: true }
 );
