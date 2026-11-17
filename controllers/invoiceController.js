@@ -410,51 +410,6 @@ export async function createInvoice(req, res, next) {
   }
 }
 
-export async function updatePaymentStatus(req, res, next) {
-  try {
-    const paymentStatus = String(
-      req.body.paymentStatus || ""
-    ).toLowerCase();
-
-    if (!["paid", "unpaid"].includes(paymentStatus)) {
-      return res.status(400).json({
-        message: "Payment status must be paid or unpaid."
-      });
-    }
-
-    const invoice = await Invoice.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        owner: req.user.id
-      },
-      {
-        $set: {
-          paymentStatus,
-          status: paymentStatus === "paid" ? "paid" : "sent"
-        }
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    )
-      .populate("customer")
-      .populate("items.product");
-
-    if (!invoice) {
-      return res.status(404).json({
-        message: "Invoice not found."
-      });
-    }
-
-    return res.json({
-      message: "Payment status updated successfully.",
-      invoice
-    });
-  } catch (error) {
-    next(error);
-  }
-}
 
   // Include freight and packing in the invoice taxable value.
   taxableAmount = roundMoney(
