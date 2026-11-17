@@ -50,8 +50,6 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
-      index: true
     },
 
     invoiceDate: {
@@ -134,5 +132,8 @@ const invoiceSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+ invoiceSchema.index(
+  { owner: 1, invoiceNumber: 1 },
+  { unique: true }
+ );
 export default mongoose.model("Invoice", invoiceSchema);
