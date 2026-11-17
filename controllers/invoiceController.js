@@ -581,5 +581,102 @@ export async function updatePaymentStatus(req, res, next) {
     next(error);
   }
 }
+export async function deleteInvoice(req, res, next) {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required to delete an invoice."
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (
+      !user ||
+      String(user.email).toLowerCase() !== String(email).trim().toLowerCase()
+    ) {
+      return res.status(401).json({
+        message: "Email or password is incorrect."
+      });
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        message: "Email or password is incorrect."
+      });
+    }
+
+    const invoice = await Invoice.findOneAndDelete({
+      _id: req.params.id,
+      owner: req.user.id
+    });
+
+    if (!invoice) {
+      return res.status(404).json({
+        message: "Invoice not found."
+      });
+    }
+
+    return res.json({
+      message: "Invoice deleted successfully.",
+      invoiceId: String(invoice._id)
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updatePaymentStatus(req, res, next) {
+  try {
+    const paymentStatus = String(
+      req.body.paymentStatus || ""
+    ).toLowerCase();
+
+    if (!["paid", "unpaid"].includes(paymentStatus)) {
+      return res.status(400).json({
+        message: "Payment status must be paid or unpaid."
+      });
+    }
+
+    const invoice = await Invoice.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        owner: req.user.id
+      },
+      {
+        $set: {
+          paymentStatus,
+          status: paymentStatus === "paid" ? "paid" : "sent"
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    )
+      .populate("customer")
+      .populate("items.product");
+
+    if (!invoice) {
+      return res.status(404).json({
+        message: "Invoice not found."
+      });
+    }
+
+    return res.json({
+      message: "Payment status updated successfully.",
+      invoice
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 
