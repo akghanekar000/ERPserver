@@ -6,6 +6,7 @@ import InvoiceCounter from "../models/InvoiceCounter.js";
 import Customer from "../models/Customer.js";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import mongoose from "mongoose";
 
 const roundMoney = (value) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
@@ -390,16 +391,39 @@ export async function createInvoice(req, res, next) {
      });
    }
 
-   if (
-     customInvoiceNumber &&
-   await Invoice.exists({ 
-     owner:req.user.id,
-     invoiceNumber: customInvoiceNumber })
-   ) {
-    return res.status(409).json({
-      message: "This invoice number already exists. Enter a different number."
-    });
-   }
+   const replaceInvoiceId = String(
+  req.body.replaceInvoiceId || ""
+).trim();
+
+const duplicateInvoice = customInvoiceNumber
+  ? await Invoice.findOne({
+      owner: req.user.id,
+      invoiceNumber: customInvoiceNumber
+    }).select("_id")
+  : null;
+
+if (
+  duplicateInvoice &&
+  String(duplicateInvoice._id) !== replaceInvoiceId
+) {
+  return res.status(409).json({
+    code: "DUPLICATE_INVOICE_NUMBER",
+    message: "This invoice number already exists."
+  });
+}
+
+if (
+  replaceInvoiceId &&
+  (
+    !customInvoiceNumber ||
+    !duplicateInvoice ||
+    String(duplicateInvoice._id) !== replaceInvoiceId
+  )
+) {
+  return res.status(409).json({
+    message: "The invoice selected for replacement is no longer available."
+  });
+}
 
     let invoiceDate = new Date();
 
@@ -447,7 +471,7 @@ const invoiceNumber = customInvoiceNumber ||
     req.user.id,
     usePrefix ? prefix : ""
   );
-    const invoice = await Invoice.create({
+    const invoiceData= ({
       owner: req.user.id,
       invoiceStatus: "saved",
       paymentStatus: "unpaid",
@@ -495,7 +519,42 @@ const invoiceNumber = customInvoiceNumber ||
       total,
       notes: String(notes || ""),
       status: "sent"
+      
+    };
+
+let invoice;
+
+if (replaceInvoiceId) {
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      const oldInvoice = await Invoice.findOneAndDelete({
+        _id: replaceInvoiceId,
+        owner: req.user.id,
+        invoiceNumber: customInvoiceNumber
+      }).session(session);
+
+      if (!oldInvoice) {
+        res.status(409);
+        throw new Error(
+          "The old invoice could not be found. Nothing was replaced."
+        );
+      }
+
+      const createdInvoices = await Invoice.create(
+        [invoiceData],
+        { session }
+      );
+
+      invoice = createdInvoices[0];
     });
+  } finally {
+    await session.endSession();
+  }
+} else {
+  invoice = await Invoice.create(invoiceData);
+}
 
     const populated = await invoice
       .populate("customer")
