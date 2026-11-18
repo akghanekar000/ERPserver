@@ -413,20 +413,40 @@ export async function createInvoice(req, res, next) {
       }
     }
  
-    const usePrefix = req.body.usePrefix === true;
-    const prefix = usePrefix
-      ? String(req.body.prefix || "").trim()
-      : "";
+    const automaticNumbering =
+  company.invoiceNumbering?.automaticNumbering !== false;
 
-    if (prefix.length > 15 || /[\s]/.test(prefix)) {
-      return res.status(400).json({
-        message: "Prefix must be 15 characters or fewer and contain no spaces."
-      });
-    }
-    
+if (!automaticNumbering && !customInvoiceNumber) {
+  return res.status(400).json({
+    message:
+      "Automatic numbering is disabled. Enter an invoice number manually."
+  });
+}
 
-    const invoiceNumber = customInvoiceNumber ||
-      await getNextInvoiceNumber(req.user.id, prefix);
+const usePrefix =
+  automaticNumbering &&
+  !customInvoiceNumber &&
+  req.body.usePrefix === true;
+
+const prefix = usePrefix
+  ? String(req.body.prefix || "").trim()
+  : "";
+
+if (
+  usePrefix &&
+  (!prefix || prefix.length > 15 || /\s/.test(prefix))
+) {
+  return res.status(400).json({
+    message:
+      "Enter a valid prefix of up to 15 characters without spaces."
+  });
+}
+
+const invoiceNumber = customInvoiceNumber ||
+  await getNextInvoiceNumber(
+    req.user.id,
+    usePrefix ? prefix : ""
+  );
     const invoice = await Invoice.create({
       owner: req.user.id,
       invoiceStatus: "saved",
