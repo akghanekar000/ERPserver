@@ -471,7 +471,7 @@ const invoiceNumber = customInvoiceNumber ||
     req.user.id,
     usePrefix ? prefix : ""
   );
-    const invoiceData= ({
+    const invoiceData= {
       owner: req.user.id,
       invoiceStatus: "saved",
       paymentStatus: "unpaid",
