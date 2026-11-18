@@ -409,6 +409,7 @@ if (
   return res.status(409).json({
     code: "DUPLICATE_INVOICE_NUMBER",
     message: "This invoice number already exists."
+    invoiceId: String(duplicateInvoice_id)
   });
 }
 
